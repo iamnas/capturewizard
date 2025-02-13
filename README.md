@@ -23,10 +23,10 @@ git clone https://github.com/iamnas/webloom.git
 cd webloom
 
 # Install dependencies
-npm install  # or pnpm install
+pnpm install
 
 # Start the development server
-npm start
+pnpm dev
 ```
 
 ## 🎬 Usage
