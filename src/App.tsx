@@ -52,7 +52,7 @@ function App() {
           stream.getTracks().forEach(track => track.stop());
         });
         streamsRef.current = [];
-        
+
         const blob = new Blob(chunks, { type: 'video/webm' });
         const url = URL.createObjectURL(blob);
         setPreviewUrl(url);
@@ -121,18 +121,18 @@ function App() {
                 <p className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Professional Screen Recording Studio</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
-              <button 
+              <button
                 onClick={toggleTheme}
                 className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-100'} transition-colors duration-200`}
               >
                 {darkMode ? <Sun size={20} /> : <Moon size={20} />}
               </button>
               <div className="flex gap-2">
-                <a 
-                  href="https://github.com/iamnas/webloom" 
-                  target="_blank" 
+                <a
+                  href="https://github.com/iamnas/webloom"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-100'} transition-colors duration-200`}
                 >
@@ -149,29 +149,27 @@ function App() {
       <main className="flex-grow px-4 py-8">
         <div className={`${darkMode ? 'bg-gray-800/50' : 'bg-white/50'} p-4 sm:p-8 rounded-xl shadow-2xl backdrop-blur-sm max-w-2xl mx-auto`}>
           <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8">Screen Recorder</h2>
-          
+
           <div className="space-y-6">
             <div className="flex justify-center items-center gap-4">
               <button
                 onClick={() => setAudioEnabled(!audioEnabled)}
-                className={`p-3 rounded-full ${
-                  audioEnabled 
+                className={`p-3 rounded-full ${audioEnabled
                     ? (darkMode ? 'bg-green-500/20 text-green-400' : 'bg-green-500/20 text-green-600')
                     : (darkMode ? 'bg-red-500/20 text-red-400' : 'bg-red-500/20 text-red-600')
-                } transition-colors duration-200 ${isRecording ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  } transition-colors duration-200 ${isRecording ? 'opacity-50 cursor-not-allowed' : ''}`}
                 title={audioEnabled ? "Audio Enabled" : "Audio Disabled"}
                 disabled={isRecording}
               >
                 {audioEnabled ? <Mic size={24} /> : <MicOff size={24} />}
               </button>
-              
+
               <button
                 onClick={isRecording ? stopRecording : startRecording}
-                className={`px-4 sm:px-6 py-3 rounded-full flex items-center gap-2 ${
-                  isRecording 
-                    ? 'bg-red-500 hover:bg-red-600' 
+                className={`px-4 sm:px-6 py-3 rounded-full flex items-center gap-2 ${isRecording
+                    ? 'bg-red-500 hover:bg-red-600'
                     : (darkMode ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700')
-                } transition-colors duration-200 text-white`}
+                  } transition-colors duration-200 text-white`}
               >
                 {isRecording ? (
                   <>
@@ -201,7 +199,7 @@ function App() {
                     {isPlaying ? <Pause size={20} /> : <Play size={20} />}
                   </button>
                 </div>
-                
+
                 <div className="flex justify-center">
                   <button
                     onClick={downloadRecording}
