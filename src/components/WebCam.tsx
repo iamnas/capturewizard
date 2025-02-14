@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, StopCircle, Download, Video } from "lucide-react";
+import { Camera, StopCircle, Download, Video, Mic, MicOff, VideoOff } from "lucide-react";
 
-export default function Recorder() {
-
+export default function WebCam() {
   const [countdown, setCountdown] = useState(0);
   const streamRef = useRef<MediaStream | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const recordedChunks = useRef<Blob[]>([]);
-
+  const videoPreviewRef = useRef<HTMLVideoElement | null>(null);
+  const [isCameraEnabled, setIsCameraEnabled] = useState<boolean>(false);
+  const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -25,7 +27,20 @@ export default function Recorder() {
 
   async function startRecording() {
     if (streamRef.current) {
-      mediaRecorder.current = new MediaRecorder(streamRef.current, { mimeType: "video/webm" });
+      const tracks: MediaStreamTrack[] = [...streamRef.current.getTracks()];
+      
+      // Add camera track if enabled
+      if (cameraStreamRef.current && isCameraEnabled) {
+        const videoTrack = cameraStreamRef.current.getVideoTracks()[0];
+        if (videoTrack) {
+          tracks.push(videoTrack);
+        }
+      }
+
+      // Create a new combined stream
+      const combinedStream = new MediaStream(tracks);
+      
+      mediaRecorder.current = new MediaRecorder(combinedStream, { mimeType: "video/webm" });
 
       mediaRecorder.current.ondataavailable = (event) => {
         if (event.data.size > 0) recordedChunks.current.push(event.data);
@@ -35,8 +50,17 @@ export default function Recorder() {
         const blob = new Blob(recordedChunks.current, { type: "video/webm" });
         setVideoUrl(URL.createObjectURL(blob));
         recordedChunks.current = [];
-        streamRef.current?.getTracks().forEach(track => track.stop());
-        streamRef.current = null;
+        
+        // Stop all tracks
+        combinedStream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+          streamRef.current = null;
+        }
+        if (cameraStreamRef.current) {
+          cameraStreamRef.current.getTracks().forEach(track => track.stop());
+          cameraStreamRef.current = null;
+        }
       };
 
       mediaRecorder.current.start();
@@ -46,8 +70,34 @@ export default function Recorder() {
 
   async function initiateRecording() {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-      streamRef.current = stream;
+      // Get display media (screen)
+      const displayOptions: DisplayMediaStreamOptions = { 
+        video: true,
+        audio: isAudioEnabled 
+      };
+      const screenStream = await navigator.mediaDevices.getDisplayMedia(displayOptions);
+      streamRef.current = screenStream;
+      
+      // Setup camera if enabled
+      if (isCameraEnabled) {
+        try {
+          const cameraStream = await navigator.mediaDevices.getUserMedia({ 
+            video: true,
+            audio: isAudioEnabled // Audio comes from screen capturing if enabled
+          });
+          cameraStreamRef.current = cameraStream;
+          
+          // Show camera preview
+          if (videoPreviewRef.current) {
+            videoPreviewRef.current.srcObject = cameraStream;
+            videoPreviewRef.current.play();
+          }
+        } catch (err) {
+          console.error("Error accessing camera:", err);
+          setIsCameraEnabled(false);
+        }
+      }
+      
       setCountdown(3); // Start countdown after screen is selected
     } catch (error) {
       console.error("Error accessing screen:", error);
@@ -69,6 +119,16 @@ export default function Recorder() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  function toggleCamera() {
+    if (isRecording) return; // Don't toggle during recording
+    setIsCameraEnabled(prev => !prev);
+  }
+
+  function toggleAudio() {
+    if (isRecording) return; // Don't toggle during recording
+    setIsAudioEnabled(prev => !prev);
   }
 
   return (
@@ -94,9 +154,26 @@ export default function Recorder() {
               Screen Recorder
             </h1>
             <p className="text-gray-400 text-lg">
-              Record your screen with just one click. Share your knowledge effortlessly.
+              Record your screen with optional camera and audio. Share your knowledge effortlessly.
             </p>
           </div>
+
+          {/* Camera Preview (when enabled) */}
+          {isCameraEnabled && !isRecording && !videoUrl && (
+            <div className="mb-8 flex justify-center">
+              <div className="relative w-48 h-36 bg-gray-800 rounded-lg overflow-hidden border-2 border-blue-500">
+                <video
+                  ref={videoPreviewRef}
+                  autoPlay
+                  muted
+                  className="w-full h-full object-cover"
+                ></video>
+                <div className="absolute bottom-2 right-2 text-xs bg-blue-500 px-2 py-1 rounded-full">
+                  Camera Preview
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Countdown Display */}
           {countdown > 0 && (
@@ -104,6 +181,34 @@ export default function Recorder() {
               <div className="text-6xl font-bold text-blue-500 animate-pulse">
                 {countdown}
               </div>
+            </div>
+          )}
+
+          {/* Option Toggles */}
+          {!isRecording && !videoUrl && (
+            <div className="flex justify-center space-x-4 mb-8">
+              <button
+                onClick={toggleCamera}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                  isCameraEnabled
+                    ? "bg-blue-500 hover:bg-blue-600"
+                    : "bg-gray-700 hover:bg-gray-600"
+                }`}
+              >
+                {isCameraEnabled ? <Camera className="w-5 h-5" /> : <VideoOff className="w-5 h-5" />}
+                <span>{isCameraEnabled ? "Camera On" : "Camera Off"}</span>
+              </button>
+              <button
+                onClick={toggleAudio}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-all ${
+                  isAudioEnabled
+                    ? "bg-blue-500 hover:bg-blue-600"
+                    : "bg-gray-700 hover:bg-gray-600"
+                }`}
+              >
+                {isAudioEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5" />}
+                <span>{isAudioEnabled ? "Audio On" : "Audio Off"}</span>
+              </button>
             </div>
           )}
 
@@ -120,7 +225,7 @@ export default function Recorder() {
             ) : (
               <button
                 onClick={initiateRecording}
-                disabled={countdown > 0}
+                disabled={countdown > 0 || isRecording}
                 className="flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Camera className="w-5 h-5" />
