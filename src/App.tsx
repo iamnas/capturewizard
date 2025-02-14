@@ -131,7 +131,7 @@ function App() {
               </button>
               <div className="flex gap-2">
                 <a
-                  href="https://github.com/iamnas/webloom"
+                  href="https://github.com/iamnas/capturewizard"
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`p-2 rounded-lg ${darkMode ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white hover:bg-gray-100'} transition-colors duration-200`}
