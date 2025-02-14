@@ -1,15 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Camera, StopCircle, Download, Video } from "lucide-react";
+import { Camera, StopCircle, Download, Video, Mic, MicOff } from "lucide-react";
 
 export default function Recorder() {
-
   const [countdown, setCountdown] = useState(0);
   const streamRef = useRef<MediaStream | null>(null);
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const recordedChunks = useRef<Blob[]>([]);
-
+  const [isAudioEnabled, setIsAudioEnabled] = useState<boolean>(false);
 
   useEffect(() => {
     if (countdown > 0) {
@@ -32,6 +31,7 @@ export default function Recorder() {
       };
 
       mediaRecorder.current.onstop = () => {
+
         const blob = new Blob(recordedChunks.current, { type: "video/webm" });
         setVideoUrl(URL.createObjectURL(blob));
         recordedChunks.current = [];
@@ -46,9 +46,21 @@ export default function Recorder() {
 
   async function initiateRecording() {
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-      streamRef.current = stream;
-      setCountdown(3); // Start countdown after screen is selected
+      const screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: isAudioEnabled
+      });
+
+      if (isAudioEnabled) {
+        const audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
+          video: false
+        });
+        audioStream.getAudioTracks().forEach((track) => screenStream.addTrack(track));
+      }
+
+      streamRef.current = screenStream;
+      setCountdown(3);
     } catch (error) {
       console.error("Error accessing screen:", error);
     }
@@ -69,6 +81,11 @@ export default function Recorder() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  function toggleAudio() {
+    if (isRecording) return;
+    setIsAudioEnabled((prev) => !prev);
   }
 
   return (
@@ -94,8 +111,31 @@ export default function Recorder() {
               Screen Recorder
             </h1>
             <p className="text-gray-400 text-lg">
-              Record your screen with just one click. Share your knowledge effortlessly.
+              Record your screen with optional audio. Share your knowledge effortlessly.
             </p>
+          </div>
+
+          {/* Audio Toggle */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={toggleAudio}
+              disabled={isRecording}
+              className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all transform hover:scale-105 shadow-lg ${
+                isAudioEnabled ? 'bg-blue-500 hover:bg-blue-600' : 'bg-gray-600 hover:bg-gray-700'
+              }`}
+            >
+              {isAudioEnabled ? (
+                <>
+                  <Mic className="w-5 h-5" />
+                  <span>Audio Enabled</span>
+                </>
+              ) : (
+                <>
+                  <MicOff className="w-5 h-5" />
+                  <span>Audio Disabled</span>
+                </>
+              )}
+            </button>
           </div>
 
           {/* Countdown Display */}
